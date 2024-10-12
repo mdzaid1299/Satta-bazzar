@@ -112,7 +112,28 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 
 
 <body style="background-color: #428bca ;">
-
+	<script>
+		document.addEventListener('DOMContentLoaded', function() {
+			var form = document.getElementById('showResult');
+			if (form) {
+				form.addEventListener('submit', function(event) {
+					event.preventDefault(); // Prevent the default form submission
+					
+					// Get the selected month and year
+					var month = document.getElementById('dd_month').value;
+					var year = document.getElementById('dd_year').value;
+					
+					// Update the URL with the selected month and year
+					var url = new URL(window.location.href);
+					url.searchParams.set('m', month);
+					url.searchParams.set('y', year);
+					
+					// Refresh the page with the new URL
+					window.location.href = url.toString();
+				});
+			}
+		});
+		</script>
 	</div>
 
 
@@ -131,8 +152,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 							</div><br />
 						</div>
 						<h4 class="text-center mb5">Monthly Result Chart</h4>
-						<h4 class="text-center mb5">2024-10-12 03:40:30</h4>
-						<div class="mb30"></div>
+						<h4 class="text-center mb5" id="liveDatetime"></h4>						<div class="mb30"></div>
 						<div class="row" style="margin-bottom: 0px;">
 							<form action="index.php" id="showResult" method="post">
 								<div class="col-sm-1">
@@ -177,7 +197,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 							<div class="col-sm-6">
 								<div class="input-group mb15"> 
 									<input type="button" onclick="if (!window.__cfRLUnblockHandlers) return false; printDiv('printableArea')" value="Print Chart" class="btn btn-warning" data-cf-modified-b90160480376af563f760fd1-="">
-									<input type="button" onclick="openLoginDialog()" value="Login" class="btn btn-primary" style="margin-left: 10px;">
+									<input type="button" onclick="isLoggedIn ? null : openLoginDialog()" value="Login" class="btn btn-primary" style="margin-left: 10px;">
 								</div>
 							</div>
 							<div class="col-sm-1">
@@ -409,6 +429,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 
 <script>
 let isLoggedIn = false;
+let originalTableData = [];
 
 function openLoginDialog() {
     document.getElementById('loginDialog').style.display = 'block';
@@ -424,13 +445,26 @@ function login() {
     
     // Replace this with your actual authentication logic
     if (username === 'a' && password === 'p') {
-        alert('Login successful!');
+        
         closeLoginDialog();
         isLoggedIn = true;
+        saveOriginalData();
         makeTableEditable();
-        showSaveButton();
+        showEditButtons();
     } else {
         alert('Invalid credentials. Please try again.');
+    }
+}
+
+function saveOriginalData() {
+    var table = document.getElementById('gvtable');
+    originalTableData = [];
+    for (var i = 0, row; row = table.rows[i]; i++) {
+        var rowData = [];
+        for (var j = 0, col; col = row.cells[j]; j++) {
+            rowData.push(col.innerText);
+        }
+        originalTableData.push(rowData);
     }
 }
 
@@ -444,15 +478,26 @@ function makeTableEditable() {
     }
 }
 
-function showSaveButton() {
+function showEditButtons() {
+    var buttonGroup = document.createElement('div');
+    buttonGroup.className = 'btn-group';
+    buttonGroup.style.marginLeft = '10px';
+
     var saveButton = document.createElement('button');
     saveButton.innerHTML = 'Save Changes';
     saveButton.className = 'btn btn-success';
-    saveButton.style.marginLeft = '10px';
     saveButton.onclick = saveChanges;
 
+    var cancelButton = document.createElement('button');
+    cancelButton.innerHTML = 'Cancel';
+    cancelButton.className = 'btn btn-warning';
+    cancelButton.onclick = cancelChanges;
+
+    buttonGroup.appendChild(saveButton);
+    buttonGroup.appendChild(cancelButton);
+
     var loginButton = document.querySelector('input[value="Login"]');
-    loginButton.parentNode.insertBefore(saveButton, loginButton.nextSibling);
+    loginButton.parentNode.insertBefore(buttonGroup, loginButton.nextSibling);
 }
 
 function saveChanges() {
@@ -473,7 +518,23 @@ function saveChanges() {
     }
 
     localStorage.setItem('tableData', JSON.stringify(data));
-    alert('Changes saved successfully!');
+    
+}
+
+function cancelChanges() {
+    if (!isLoggedIn) {
+        alert('No changes to cancel.');
+        return;
+    }
+
+    var table = document.getElementById('gvtable');
+    for (var i = 0, row; row = table.rows[i]; i++) {
+        for (var j = 0, col; col = row.cells[j]; j++) {
+            if (originalTableData[i] && originalTableData[i][j]) {
+                col.innerText = originalTableData[i][j];
+            }
+        }
+    }
 }
 
 function loadSavedData() {
@@ -502,8 +563,28 @@ window.onclick = function(event) {
         modal.style.display = "none";
     }
 }
-</script>
 
+function updateDateTime() {
+    var now = new Date();
+    var options = { 
+        year: 'numeric', 
+        month: '2-digit', 
+        day: '2-digit', 
+        hour: '2-digit', 
+        minute: '2-digit', 
+        second: '2-digit',
+        hour12: false
+    };
+    var formattedDateTime = now.toLocaleString('en-US', options);
+    document.getElementById('liveDatetime').textContent = formattedDateTime;
+}
+
+// Update the date and time immediately
+updateDateTime();
+
+// Then update it every second
+setInterval(updateDateTime, 1000);
+</script>
 						< <script src="/cdn-cgi/scripts/7d0fa10a/cloudflare-static/rocket-loader.min.js"
 							data-cf-settings="b90160480376af563f760fd1-|49" defer>
 							</script>
